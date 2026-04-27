@@ -32,7 +32,8 @@ async def calculate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("တွက်ချက်မှု မှားယွင်းနေပါတယ်။")
 
-if name == 'main':
+if __name__ == '__main__':
+
     # Web Server ကို Thread နဲ့ Run ရန်
     threading.Thread(target=run_web_server, daemon=True).start()
     
