@@ -36,7 +36,7 @@ async def send_ai_message(context: ContextTypes.DEFAULT_TYPE):
     try:
         prompt = "Write a short Myanmar gaming message for an MLBB group. Cool and friendly."
         response = ai_model.generate_content(prompt)
-        await context.bot.send_message(chat_id=-1002592040832. text=response.text)
+        await context.bot.send_message(chat_id=-1002592040832, text=response.text)
     except: pass
 
 # ၂။ Advanced Calculator
