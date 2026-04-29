@@ -34,10 +34,15 @@ def run_web_server():
 # ၁။ AI Auto Message (၁ နာရီတစ်ခါ)
 async def send_ai_message(context: ContextTypes.DEFAULT_TYPE):
     try:
-        prompt = "Write a short Myanmar gaming message for an MLBB group. Cool and friendly."
+        # AI ဆီက စာသားတောင်းမယ်
+        prompt = "Write a short, friendly Myanmar gaming message for an MLBB group."
         response = ai_model.generate_content(prompt)
+        
+        # သတ်မှတ်ထားတဲ့ Group ID ထဲကို စာပို့မယ်
         await context.bot.send_message(chat_id="-1002592040832", text=response.text)
-    except: pass
+    except Exception as e:
+        print(f"Error in send_ai_message: {e}")
+
 
 # ၂။ Advanced Calculator
 async def calculate(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -107,7 +112,7 @@ if __name__ == '__main__':
     threading.Thread(target=run_web_server, daemon=True).start()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
-    app.job_queue.run_repeating(send_ai_message, interval=60, first=10)
+        app.job_queue.run_repeating(send_ai_message, interval=3600, first=10)
 
     # Command Handlers
     app.add_handler(CommandHandler('random', lambda u, c: u.message.reply_text(f"🎁 Hero: {random.choice(HEROES)}")))
