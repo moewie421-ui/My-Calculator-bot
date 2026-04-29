@@ -112,8 +112,8 @@ if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
     # ၁ နာရီတစ်ခါ စာပို့ရန် Timer နှိုးခြင်း
-    if app.job_queue:
-    app.job_queue.run_repeating(send_ai_message, interval=3600, first=10)
+        if app.job_queue:
+            app.job_queue.run_repeating(send_ai_message, interval=3600, first=10)
 
     # Command Handlers
     app.add_handler(CommandHandler('random', lambda u, c: u.message.reply_text(f"🎁 Hero: {random.choice(HEROES)}")))
