@@ -12,7 +12,7 @@ from datetime import timedelta, datetime
 # --- CONFIGURATION ---
 BOT_TOKEN = "8478248117:AAGFO8JK1AnUvtw5k8cQXzWHxUgqU8jCaMw"
 GEMINI_API_KEY = "AIzaSyCqhrPEFerqKf-0_UL4x1lD9CNkVScBaEk"
-ADMIN_ID = 7146980032
+ADMIN_ID = 5508936383
 GROUP_ID = -1002592040832
 
 # Gemini AI Setup
