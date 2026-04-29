@@ -18,7 +18,7 @@ GROUP_ID = "-1002592040832"
 
 # Gemini AI Setup
 genai.configure(api_key=GEMINI_API_KEY)
-ai_model = genai.GenerativeModel('gemini-1.5-flash')
+ai_model = genai.GenerativeModel('gemini-pro')
 
 # Web Server for Rendering/Koyeb
 class handler(BaseHTTPRequestHandler):
