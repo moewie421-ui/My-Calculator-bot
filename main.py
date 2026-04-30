@@ -136,6 +136,8 @@ def monitor_messages(message):
             try:
                 ai_res = model.generate_content(message.text)
                 bot.reply_to(message, ai_res.text)
-            except: pass
+            except Exception as e:
+                print(f"AI Error: {e}")
+
 
 bot.infinity_polling()
