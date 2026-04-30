@@ -1,3 +1,28 @@
+import os
+from flask import Flask
+from threading import Thread
+
+# Flask App ဆောက်ပြီး Port တစ်ခု ဖွင့်ပေးထားခြင်း (Render အတွက်)
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run():
+    # Render က ပေးတဲ့ Port ကို ယူသုံးမယ်၊ မရှိရင် 8080 သုံးမယ်
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- Bot ရဲ့ အဓိက Code အပေါ်နားမှာ ဒါကို ခေါ်သုံးပေးပါ ---
+keep_alive()
+
+# ဒီအောက်မှာမှ သင့်ရဲ့ Bot code တွေကို ဆက်ရေးပါ (bot.infinity_polling အထိ)
+
 import telebot
 import random
 import time
