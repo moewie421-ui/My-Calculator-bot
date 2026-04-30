@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
 # Render Environment Variables ထဲမှာ BOT_TOKEN ကို သေချာထည့်ထားပေးပါ
-BOT_TOKEN = os.environ.get("7921219930:AAHT2t0RY55MVVYc7nbZqYa-BExCfvFOEB8")
+BOT_TOKEN ="7921219930:AAHT2t0RY55MVVYc7nbZqYa-BExCfvFOEB8"
 ADMIN_ID = 5508936383
 GROUP_ID = "-1002592040832"
 
