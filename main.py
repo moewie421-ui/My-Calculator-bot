@@ -7,7 +7,7 @@ from collections import defaultdict
 from simpleeval import simple_eval
 
 # --- CONFIGURATION ---
-BOT_TOKEN = "7921219930:AAGB01S8mXYh394pH0JezoZzATOJYgN7yNk"
+BOT_TOKEN = "7921219930:AAG5-tqSQmt_ImxJyF4evv8gxU_D9mvJ-RU"
 GEMINI_API_KEY = "AIzaSyDnpzNG40_OuLTdyWqmyn1HK7lKXbz5MCY"
 GROUP_CHAT_ID = "-1002592040832"
 ADMIN_ID = "5508936383"
