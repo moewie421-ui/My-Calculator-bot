@@ -1,101 +1,116 @@
-import os
+import telebot
 import random
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
-from datetime import datetime, timedelta
+import time
+import google.generativeai as genai
+from apscheduler.schedulers.background import BackgroundScheduler
+from collections import defaultdict
+from simpleeval import simple_eval
 
 # --- CONFIGURATION ---
-# Render Environment Variables ထဲမှာ BOT_TOKEN ကို သေချာထည့်ထားပေးပါ
-BOT_TOKEN ="7921219930:AAHT2t0RY55MVVYc7nbZqYa-BExCfvFOEB8"
-ADMIN_ID = 5508936383
-GROUP_ID = "-1002592040832"
+BOT_TOKEN = "7921219930:AAHT2t0RY55MVVYc7nbZqYa-BExCfvFOEB8"
+GEMINI_API_KEY = "AIzaSyDnpzNG40_OuLTdyWqmyn1HK7lKXbz5MCY"
+GROUP_CHAT_ID = "-1002592040832"
+ADMIN_ID = "5508936383"
 
-# MLBB Hero Full List
-MLBB_HEROES = [
-    "Miya", "Balmond", "Saber", "Alice", "Nana", "Tigreal", "Alucard", "Karina", "Akai", "Franco", 
-    "Bruno", "Clint", "Rafaela", "Eudora", "Zilong", "Fanny", "Layla", "Minotaur", "Lolita", "Hayabusa", 
-    "Freya", "Gord", "Natalia", "Kagura", "Chou", "Sun", "Alpha", "Ruby", "Yi Sun-shin", "Moskov", 
-    "Johnson", "Cyclops", "Estes", "Hilda", "Aurora", "Lapu-Lapu", "Vexana", "Roger", "Karrie", "Grock", 
-    "Irithel", "Harley", "Odette", "Lancelot", "Diggie", "Hylos", "Zhask", "Helcurt", "Pharsa", "Lesley", 
-    "Jawhead", "Angela", "Gusion", "Valir", "Martis", "Uranus", "Hanabi", "Chang'e", "Selena", "Aldous", 
-    "Claude", "Vale", "Leomord", "Lunox", "Hanzo", "Belerick", "Minsitthar", "Kadita", "Badang", "Guinevere", 
-    "Khufra", "Esmeralda", "Granger", "Terizla", "X.Borg", "Lylia", "Baxia", "Masha", "Wanwan", "Silvanna", 
-    "Cecilion", "Carmilla", "Atlas", "Popol and Kupa", "Yu Zhong", "Khaleed", "Barats", "Brody", "Benedetta", 
-    "Mathilda", "Paquito", "Beatrix", "Gloo", "Phoveus", "Natan", "Aulus", "Aamon", "Valentina", "Edith", 
-    "Yin", "Melissa", "Xavier", "Julian", "Fredrinn", "Joy", "Arlott", "Novaria", "Ixia", "Nolan", "Cici"
+# Gemini AI Setup
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# --- ၁၂၆ ကောင်သော MLBB HEROES စာရင်း အပြည့်အစုံ ---
+HEROES = [
+    "Miya", "Balmond", "Saber", "Alice", "Nana", "Tigreal", "Alucard", "Karina", "Akai", "Franco", "Bruno", "Clint", "Rafaela", "Eudora", "Zilong", "Fanny", "Layla", "Minotaur", "Lolita", "Hayabusa", "Freya", "Gord", "Natalia", "Kagura", "Chou", "Sun", "Alpha", "Ruby", "Yi Sun-shin", "Moskov", "Johnson", "Cyclops", "Estes", "Hilda", "Aurora", "Lapu-Lapu", "Vexana", "Roger", "Karrie", "Grock", "Irithel", "Harley", "Odette", "Lancelot", "Diggie", "Hylos", "Zhask", "Helcurt", "Pharsa", "Lesley", "Jawhead", "Angela", "Gusion", "Valir", "Martis", "Uranus", "Hanabi", "Chang'e", "Selena", "Aldous", "Claude", "Vale", "Leomord", "Lunox", "Hanzo", "Belerick", "Kimmy", "Thamuz", "Harith", "Kadita", "Faramis", "Badang", "Khufra", "Granger", "Guinevere", "Esmeralda", "Terizla", "X.Borg", "Lylia", "Baxia", "Masha", "Wanwan", "Silvanna", "Cecilion", "Carmilla", "Atlas", "Popol and Kupa", "Yu Zhong", "Khaleed", "Barats", "Brody", "Benedetta", "Mathilda", "Paquito", "Beatrix", "Gloo", "Phoveus", "Natan", "Aulus", "Aamon", "Valentina", "Edith", "Yin", "Melissa", "Xavier", "Julian", "Fredrinn", "Joy", "Arlott", "Novaria", "Ixia", "Nolan", "Cici", "Chip", "Zhuxin", "Suyou"
 ]
 
-# Web Server for Render
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'Bot is Online!')
+# --- MLBB RULES (သင်ပေးထားသော အချက်အားလုံး) ---
+RULES_TEXT = """
+ **MLBB MID ONLY RULE**
 
-def run_web_server():
-    port = int(os.environ.get("PORT", 8080))
-    server = HTTPServer(('0.0.0.0', port), handler)
-    server.serve_forever()
+ **Creep သတ်မှတ်ချက်:**
+Mid LANE CREEP သာစားရမည်။ အပေါ်အောက် SECOND TOWER ကျိုးလျှင် LANE ရှင်းနိုင်သည်။
 
-# 1. Anti-Spam (4s 5 warnings, 5s 7 mutes)
-user_messages = {}
-async def anti_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or update.message.chat.type == 'private': return
-    user_id = update.effective_user.id
-    if user_id == ADMIN_ID: return
-    
-    now = datetime.now()
-    if user_id not in user_messages: user_messages[user_id] = []
-    user_messages[user_id] = [t for t in user_messages[user_id] if now - t < timedelta(seconds=5)]
-    user_messages[user_id].append(now)
-    count = len(user_messages[user_id])
+ **Lane ရှင်းခြင်း:**
+LANE ရှင်းရာတွင် SECOND TOWER အကျော်က ချုံပုတ်ကျော်ပြီး မရှင်းရ။
 
-    if count == 5:
-        await update.message.reply_text(f"⚠️ @{update.effective_user.username or update.effective_user.first_name} ရေ မ spam ပါနဲ့ဗျ။")
-    elif count >= 7:
-        until = datetime.now() + timedelta(minutes=10)
-        try:
-            await context.bot.restrict_chat_member(update.effective_chat.id, user_id, 
-                  permissions={"can_send_messages": False}, until_date=until)
-            await update.message.reply_text(f"🚫 @{update.effective_user.username or update.effective_user.first_name} ကို ၁၀ မိနစ် Mute လိုက်ပါပြီ။")
-        except: pass
+ **Mega Tower & Ending:**
+MID MEGA TOWER ကျိုးပါက LANE သုံး LANE စုရှင်းတာကို ခံရမည်။ MID MEGA ကျိုးပါက ကြိုက်တဲ့ CREEP နဲ့ END လို့ရသည်။
 
-# 2. Calculator
-async def calculate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text: return
-    text = update.message.text
-    if any(op in text for op in ['+', '-', '*', '/', '÷', '×']):
-        try:
-            expr = text.replace('÷', '/').replace('×', '*').replace('x', '*')
-            if all(c in "0123456789+-*/(). " for c in expr):
-                res = eval(expr)
-                await update.message.reply_text(f"🔢 အဖြေ: {res}")
-        except: pass
+ **အရေးကြီးချက်များ:**
+ [REMAP] LINE မကောင်းလျှင် 1MIN အတွင်း SURR ချပါ။
+ [UNSEE] ပွဲတွေအတွက်သာ ရရှိနိုင်သည်။
+ အပြင်ပွဲများ % ပြန်မအမ်းပါ။
+ **RULE COPY မလုပ်ပါနဲ့။**
+"""
 
-# 3. Admin Broadcast
-async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID: return
-    if not context.args: return
-    msg = " ".join(context.args)
-    await context.bot.send_message(chat_id=GROUP_ID, text=f"📢 **ADMIN MESSAGE:**\n\n{msg}")
+# Anti-Spam မှတ်တမ်း
+user_spam_data = defaultdict(lambda: {"count": 0, "start_time": time.time()})
 
-# --- MAIN ---
-if __name__ == '__main__':
-    threading.Thread(target=run_web_server, daemon=True).start()
-    
-    if not BOT_TOKEN:
-        print("Error: BOT_TOKEN not found in environment variables!")
-    else:
-        app = ApplicationBuilder().token(BOT_TOKEN).build()
+# --- FUNCTIONS ---
+def send_ai_quote():
+    try:
+        prompt = "မင်းက MLBB Group Admin ပါ။ အဖွဲ့ဝင်တွေအတွက် အချစ်၊ အလွမ်း၊ ဒါမှမဟုတ် ခံစားချက်ရသပါတဲ့ မြန်မာစာသားတိုလေးတစ်ကြောင်း စဉ်းစားပေးပါ။ စာသားသက်သက်ပဲ ပို့ပါ။"
+        response = model.generate_content(prompt)
+        bot.send_message(GROUP_CHAT_ID, response.text)
+    except:
+        pass
 
-        # Handlers
-        app.add_handler(CommandHandler('random', lambda u, c: u.message.reply_text(f"🎁 Random Hero: {random.choice(MLBB_HEROES)}")))
-        app.add_handler(CommandHandler('split', lambda u, c: u.message.reply_text(f"⚔️ Team ခွဲလိုက်ပါပြီ -\n\n🟦 Blue: {random.randint(1,5)}\n🟥 Red: {random.randint(1,5)}")))
-        app.add_handler(CommandHandler('broadcast', broadcast))
-        app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & (~filters.COMMAND), calculate))
-        app.add_handler(MessageHandler(filters.ALL & filters.ChatType.GROUPS, anti_spam))
-        
-        print("Bot is starting correctly without AI module...")
-        app.run_polling()
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_ai_quote, 'interval', minutes=45)
+scheduler.start()
+
+# --- HANDLERS ---
+@bot.message_handler(func=lambda m: m.chat.type == 'private' and m.from_user.id == ADMIN_ID)
+def handle_broadcast(message):
+    bot.send_message(GROUP_CHAT_ID, message.text)
+    bot.reply_to(message, " Group ထဲကို စာပို့လိုက်ပါပြီ။")
+
+@bot.message_handler(commands=['cal'])
+def do_calc(message):
+    try:
+        msg_parts = message.text.split(maxsplit=1)
+        if len(msg_parts) < 2:
+            bot.reply_to(message, " တွက်ချက်လိုသည့် ဂဏန်းများကို ရိုက်ထည့်ပါ။\nဥပမာ- `/cal 100 + 500`")
+            return
+        result = simple_eval(msg_parts[1])
+        bot.reply_to(message, f" **ရလဒ်:** {result}")
+    except:
+        bot.reply_to(message, " တွက်ချက်မှု မှားယွင်းနေပါသည်။")
+
+@bot.message_handler(commands=['rule'])
+def show_rules(message):
+    bot.reply_to(message, RULES_TEXT)
+
+@bot.message_handler(commands=['random'])
+def random_hero(message):
+    bot.reply_to(message, f" သင်ဆော့ရမယ့် Hero: **{random.choice(HEROES)}**")
+
+@bot.message_handler(content_types=['text', 'sticker'])
+def monitor_messages(message):
+    if message.chat.type != 'private':
+        uid = message.from_user.id
+        now = time.time()
+        u_data = user_spam_data[uid]
+
+        if now - u_data["start_time"] > 6:
+            u_data["count"] = 1
+            u_data["start_time"] = now
+        else:
+            u_data["count"] += 1
+
+        if u_data["count"] == 5 and (now - u_data["start_time"]) <= 5:
+            bot.send_message(message.chat.id, f" @{message.from_user.username} Sticker/Text/Emoji မ Spam ပါနဲ့ဦး။")
+
+        if u_data["count"] >= 7 and (now - u_data["start_time"]) <= 6:
+            try:
+                bot.restrict_chat_member(message.chat.id, uid, until_date=int(time.time() + 600))
+                bot.send_message(message.chat.id, f" @{message.from_user.username} ကို ၁၀ မိနစ် Mute လိုက်ပါပြီ။")
+            except: pass
+            return
+
+        if message.reply_to_message and message.reply_to_message.from_user.id == bot.get_me().id:
+            try:
+                ai_res = model.generate_content(message.text)
+                bot.reply_to(message, ai_res.text)
+            except: pass
+
+bot.infinity_polling()
