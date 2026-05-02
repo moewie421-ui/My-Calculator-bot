@@ -1,5 +1,3 @@
 pyTelegramBotAPI
 google-generativeai
-apscheduler
-simpleeval
 flask
