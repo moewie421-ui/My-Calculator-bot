@@ -77,7 +77,7 @@ def split_teams(message):
 # 3. Admin Broadcast
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id == 7146980032:
         msg_to_send = message.text.replace('/broadcast', '').strip()
         if msg_to_send:
             # ဤနေရာတွင် Chat ID ကို သင့် Group ID ဖြင့် အစားထိုးနိုင်သည်
