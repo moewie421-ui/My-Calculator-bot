@@ -6,7 +6,7 @@ from threading import Thread
 import google.generativeai as genai
 
 # --- CONFIGURATION ---
-BOT_TOKEN = "8617312989:AAECJoFTNG5I1TZOV5iWjuEPbvo0FLf9Igs"
+BOT_TOKEN = "8617312989:AAGP5eW_7AY7VsThFzhRFaX8QVSgGhHR-Aw"
 GEMINI_API_KEY = "AIzaSyDnpzNG40_OuLTdyWqmyn1HK7lKXbz5MCY"
 ADMIN_ID = "5508936383"
 
